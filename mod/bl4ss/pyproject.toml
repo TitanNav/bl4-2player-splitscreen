@@ -1,0 +1,19 @@
+[project]
+name = "bl4ss"
+version = "0.9.0"
+description = "Two-player local split-screen for Borderlands 4 on PC: Player 2 joins on the main menu, picks or creates a character, and arrives in the world."
+authors = [{ name = "TitanNav" }]
+requires-python = ">=3.13"
+dependencies = ["oak2_mod_manager >= 0.3"]
+
+[project.urls]
+Repository = "https://github.com/TitanNav/bl4-2player-splitscreen"
+Issues = "https://github.com/TitanNav/bl4-2player-splitscreen/issues"
+
+[tool.sdkmod]
+name = "BL4 2-Player Split-Screen Unlocked"
+supported_games = ["BL4"]
+coop_support = "HostOnly"
+auto_enable = true
+license = { name = "GPL3", url = "https://choosealicense.com/licenses/gpl-3.0/" }
+download = "https://github.com/TitanNav/bl4-2player-splitscreen/releases/latest/download/bl4ss.sdkmod"
