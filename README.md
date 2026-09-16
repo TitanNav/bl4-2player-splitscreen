@@ -2,13 +2,17 @@
 
 ![BL4 2-Player Split-Screen Unlocked](docs/banner.png)
 
-**Two-player local split-screen for Borderlands 4 on PC — one keyboard/mouse or controller for Player 1, a second
+**Version 0.9.1.** **Two-player local split-screen for Borderlands 4 on PC — one keyboard/mouse or controller for Player 1, a second
 controller for Player 2, one screen.**
 
-> **This is a BETA.** It has only been tested in the first open area after the prologue. Cutscenes, story events,
-> vehicles, fast travel, bosses and plenty of other things I haven't reached yet may break it. I'm publishing early
-> to gather feedback while I work through a full two-player playthrough, which is going to take a while.
-> **Back up your saves before using it** (`Documents\My Games\Borderlands 4\Saved`).
+This is fully functional based on testing so far, but my testing has been somewhat limited. It has only been tested
+in the early stages of the game. Cutscenes, story events, vehicles, fast travel, bosses and plenty of other things I
+haven't reached yet may cause issues, but I'm optimistic since it's based on the native split-screen code that's
+already in the game. I'm publishing early to gather feedback while I work through a full two-player playthrough
+(which might take a while).
+**Back up your saves before using it** (`Documents\My Games\Borderlands 4\Saved`).
+
+**New in 0.9.1:** Player 2 can pick DLC Vault Hunters (C4SH, Loveless) if the account running the game owns them.
 
 ---
 
@@ -22,10 +26,15 @@ world. This mod closes those gaps so the game's own split-screen works:
 - Player 2 joins on the main menu (automatically, or with one button).
 - Player 2 loads any of their characters, or creates a new one, from the game's own couch co-op menus.
 - Both players travel into the world together and play in split-screen.
+- Player 2 can use the DLC Vault Hunters the account running the game owns (C4SH, Loveless).
 - A handful of split-screen bugs are fixed along the way (blurred screen, lost mouse look, invisible menu cursor).
 
 Player 2's characters are saved separately from Player 1's, under
 `Saved\SaveGames\Profiles\client_0_user_1\`.
+
+Another perk of being able to use the native split-screen functionality is that this doesn't require the usual
+workarounds like running multiple instances of the game on the same PC. Performance / framerate has been good in my
+testing so far.
 
 ---
 
@@ -120,6 +129,19 @@ character that hasn't played the prologue. **There is no "skip prologue" for Pla
 game's skip-prologue rewards for Player 2 directly, and it had no effect. Expect first-time tutorial pop-ups for
 Player 2 as well.
 
+### DLC Vault Hunters
+
+Player 2 can create and play the DLC Vault Hunters (C4SH, Loveless) as long as the account running the game owns
+them. DLC ownership is per player and Player 2 has no store account of its own, so the mod gives Player 2 Player 1's
+DLC; without it, those classes show a padlock and a store link in Player 2's character select.
+
+## Prologue is NOT supported for 2 players
+
+Do not start the Prologue with two characters — you will get stuck at the character selection screen if you do.
+Remove Player 2 using the mods menu while still in the Main Menu before starting a new character. Then complete the
+Prologue, exit to main menu, and add the second player back to your party. Or just don't connect the second
+controller until you're done with the Prologue, and then add Player 2 in the Main Menu.
+
 ---
 
 ## The mod menu
@@ -152,6 +174,7 @@ normal Unreal Engine or game function called by name through the SDK, the same w
 |---|---|---|
 | **No way to add a second local player.** | Adds Player 2 on the main menu, automatically when a second controller is detected, or on demand. | Engine function `GameplayStatics.CreatePlayer`. Controller detection reads the engine's input-device list (`InputDeviceLibrary`): a connected device assigned to a second platform user. |
 | **Player 2 can't get past Shared Progression when creating a character** (the screen only listens to the signed-in player). | Temporarily swaps which player each set of controls drives, until the class is picked. | Engine function `GameplayStatics.SetPlayerPlatformUserId` for both players; a hook on the game's travel notice ends the swap when the class pick moves Player 2 to the menu stage. |
+| **DLC Vault Hunters are locked for Player 2** (C4SH and Loveless show a padlock and a store link in Player 2's character select, even on an account that owns them). DLC ownership is per player, and Player 2 has no store account of its own. | Gives Player 2 the same DLC as Player 1, so Player 2 can create and play the DLC Vault Hunters you own. | A hook on the game's own `GbxPlayerController.ServerRefreshPlayerEntitlementFacts`: when a second **local** player tells the game which DLC it owns, the mod sends Player 1's list instead, and pushes that list again before each menu. The list is the game's own text and is never edited — if Player 1 doesn't own the DLC, Player 2 doesn't either. Players joining an online session are untouched. |
 | **Player 2 never arrives in the world** — stuck in the loading tunnel forever. The game waits for Player 2 to be "client ready", but that check needs an online ID, which a local guest never has, so it retries forever. | Marks Player 2 ready when they travel, which completes the arrival through the game's own code path. | **One direct call to the game's internal "client ready" function** for Player 2 (see "Is it safe?"). Located in memory by a code signature. |
 | **Opening a menu blurs the other player's half** (a full-screen menu drops the game's global render scale to 10%, and in split-screen that setting is shared). | Keeps the render scale where you set it. | Re-issues the console setting `r.ScreenPercentage` once, at its current value, via the engine's console-command function. Console-set values outrank the menu's change. Your Upscaling Quality option still works. |
 | **Player 1 loses mouse look after one click while Player 2's menu is open** (Player 2's menu switches the shared game window into menu input mode). | Puts Player 1 back into game input mode whenever Player 2 opens a menu, unless Player 1's own menu is open. | Engine function `WidgetBlueprintLibrary.SetInputMode_GameOnly` for Player 1, when the menu opens and again ~20 frames later. |
@@ -215,6 +238,13 @@ unusual.
 4. **It sets a console variable** (`r.ScreenPercentage`) to the value it already has, the same as typing it into
    the console yourself.
 
+5. **It tells the game that Player 2 owns the same DLC as Player 1.** The game asks each player's client which DLC
+   it owns; Player 2 has no store account, so it answers "none" and DLC Vault Hunters are padlocked on the second
+   half of *your* screen. The mod copies Player 1's answer, unchanged, to Player 2 — it never writes an
+   entitlement of its own, so this unlocks exactly the DLC the account running the game has paid for, and nothing
+   else. It applies only to a second **local** player; anyone joining online answers for themselves. Nothing is
+   stored: the game asks again from scratch every session.
+
 **Saves:** Player 2's characters live in their own profile folder (`Saved\SaveGames\Profiles\client_0_user_1\`),
 separate from your Steam profile's saves, so they may not be covered by Steam Cloud. Back that folder up yourself.
 I haven't seen any save corruption in testing, but this is a beta.
@@ -247,6 +277,14 @@ sessions with other players.
 
 ## Known issues
 
+- **Cannot complete Prologue with 2 players.** Wait to add Player 2 back in the Main Menu after you complete the
+  Prologue, or remove them using the console commands if you accidentally left them in the party when you started
+  the Prologue and add them back in afterwards.
+- **Pink sparkles over Player 2's first-person arms on the Badass graphics preset.** A Borderlands 4 rendering
+  problem in the second split-screen view, not something the mod does — Player 1 is never affected. **Use the Very
+  High preset or lower.** Chased at length: it is unrelated to DLSS, upscaling, anti-aliasing, frame generation,
+  depth of field, reflections, the shader cache, GPU drivers and the DLC, and it happens on every character and
+  save. Only the Badass preset triggers it.
 - **Player 2 spawns inside Player 1** when arriving in the world. Not a functional problem, just strange-looking;
   walk apart.
 - **Player 2 starts at level 1 without an action skill** (see above). No skip-prologue for Player 2.
@@ -273,6 +311,8 @@ sessions with other players.
 - **Player 2 is stuck in the loading tunnel / never appears in the world:** open the console (`~`) and look for a
   `[BL4SS]` line saying the ready setter couldn't be located. That means a game update changed the code the mod
   needs (see "Game updates"). Please report it with your game version.
+- **Pink sparkles over Player 2's arms and gun:** switch the graphics preset to **Very High** or lower (see Known
+  issues). Player 1's half is unaffected either way.
 - **Player 1 lost mouse look while Player 2's menu is open:** this should be fixed. If it happens, opening and
   closing the console (`~` twice) restores it. Please report it.
 - **Controls feel swapped** (controller 1 drives Player 2): if you used `bl4ss_swap`, run it again to cancel, or

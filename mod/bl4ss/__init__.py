@@ -6,6 +6,7 @@ The game already ships couch co-op; on PC it never finishes setting up the secon
   from the game's own "Load Vault Hunter" menu;
 - offers a hotkey that swaps the two players' platform users while a new P2 character is created — the Shared
   Progression screen only accepts the signed-in platform user;
+- gives P2 the same DLC entitlements as P1, so DLC Vault Hunters aren't padlocked for P2 (see entitlements.py);
 - marks P2 "client ready" when it travels, so it actually arrives in the world (see native.py);
 - keeps one player's menu from dropping the other half to 10% render resolution (see render.py);
 - keeps P1's mouse look while P2's menu is open, and makes P2's controller cursor visible in menus.
@@ -22,12 +23,12 @@ from mods_base import BoolOption, ButtonOption, build_mod, command, hook, keybin
 from unrealsdk import logging
 from unrealsdk.hooks import Type
 
-from . import native, players, render
+from . import entitlements, native, players, render
 
 if TYPE_CHECKING:
     from unrealsdk.unreal import BoundFunction, UObject, WrappedStruct
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 __author__ = "TitanNav"
 
 LOG_PREFIX = "[BL4SS]"
@@ -76,6 +77,7 @@ def _try_auto_join(reason: str) -> None:
         _had_p2 = True
         return
     _swap_out("Player 2 gone")
+    entitlements.reset()
     if _had_p2:
         # P2 existed earlier this session and is gone now: the players chose Leave Split Screen.
         _p2_dismissed = True
@@ -84,6 +86,7 @@ def _try_auto_join(reason: str) -> None:
         logging.info(f"{LOG_PREFIX} auto-join ({reason})")
         if players.add_p2():
             _had_p2 = True
+            entitlements.share_with_p2()
 
 
 @hook("/Script/OakGame.OakPlayerController:ClientNotifyTeleporting", Type.POST)
@@ -107,10 +110,20 @@ def on_travel_notice(obj: UObject, args: WrappedStruct, _ret: Any, _func: BoundF
         logging.error(f"{LOG_PREFIX} travel hook: {type(e).__name__}: {e}")
 
 
+@hook("/Script/GbxGame.GbxPlayerController:ServerRefreshPlayerEntitlementFacts", Type.PRE)
+def on_entitlement_refresh(obj: UObject, args: WrappedStruct, _ret: Any, _func: BoundFunction) -> None:
+    try:
+        entitlements.on_refresh(obj, args)
+    except Exception as e:  # noqa: BLE001
+        logging.error(f"{LOG_PREFIX} entitlement hook: {type(e).__name__}: {e}")
+
+
 @hook(f"{UI_SCRIPT}:MenuOpen", Type.POST)
 def on_menu_open(_obj: UObject, args: WrappedStruct, _ret: Any, _func: BoundFunction) -> None:
     try:
         pcs = players.controllers()
+        if len(pcs) >= 2:
+            entitlements.share_with_p2()  # before every menu: the game refreshes P2's own entitlements as it goes
         if pcs and _widget_name(args) == TITLE_MENU and _same(args.WorldContextObject, pcs[0]):
             _try_auto_join("title menu opened")
         elif len(pcs) >= 2 and pcs[0].Pawn is not None and not _same(args.WorldContextObject, pcs[0]):
@@ -250,11 +263,13 @@ def toggle_p2() -> None:
         if len(players.controllers()) >= 2:
             _swap_out("Player 2 removed")
             players.remove_p2()
+            entitlements.reset()
             _p2_dismissed = True
             _had_p2 = False
         elif players.add_p2():
             _p2_dismissed = False
             _had_p2 = True
+            entitlements.share_with_p2()
     except Exception as e:  # noqa: BLE001
         logging.error(f"{LOG_PREFIX} add/remove Player 2: {type(e).__name__}: {e}")
 

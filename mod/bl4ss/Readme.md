@@ -32,6 +32,9 @@ swapped; the mouse cursor may be hidden — use the first controller). **Control
 as the class is picked**; then Player 2 presses **B** back to its menu. (Press **F8** again only to cancel before
 picking a class.) The new character is saved once you're in the world.
 
+**DLC Vault Hunters.** Player 2 can pick C4SH or Loveless if the account running the game owns them: DLC ownership
+is per player and Player 2 has no account of its own, so the mod gives Player 2 Player 1's DLC.
+
 Player 2's characters are saved separately, under `Saved\SaveGames\Profiles\client_0_user_1\`.
 
 ## Known issues
@@ -44,6 +47,12 @@ Player 2's characters are saved separately, under `Saved\SaveGames\Profiles\clie
   "How it works"); input in that frame goes to the other player.
 - A new Player 2 character starts at level 1 without an action skill and has to level up to unlock it; there is no
   "skip prologue" for Player 2.
+- Don't start the Prologue with two players — you get stuck on the character selection screen. Remove Player 2 on
+  the main menu first, finish the Prologue, then add Player 2 back.
+- **Pink sparkles over Player 2's first-person arms on the Badass graphics preset.** A Borderlands 4 rendering
+  problem in the second split-screen view, not caused by the mod (Player 1 is never affected). Use Very High or
+  lower. Unrelated to DLSS, upscaling, anti-aliasing, frame generation, depth of field, reflections, the shader
+  cache, drivers and the DLC.
 
 ## Troubleshooting
 
